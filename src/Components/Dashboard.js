@@ -1,27 +1,34 @@
-import React from 'react'
+import React from "react";
 import { useEffect, useState } from "react";
-        
+
 import axios from "axios";
 import { useFormik } from "formik";
-import * as Yup from 'yup'
+import * as Yup from "yup";
 function Dashboard() {
-
-    const [contactList, setContactList] = useState([]);
-  const [name, setName] = useState('');
+  const [contactList, setContactList] = useState([]);
+  const [name, setName] = useState("");
   const [editedName, setEditedName] = useState("");
   const [editedContactId, setEditedContactId] = useState(null);
 
   const contactSchema = Yup.object({
-    name:Yup.string().required("please add a name")
+    name: Yup.string()
+      .typeError("Must be a string")
+      .required("please add a name"),
+    password: Yup.string()
+      .typeError("Must be a string")
+      .required("please write your password"),
+  });
 
-  })
   const { values, errors, handleChange, handleBlur, handleSubmit } = useFormik({
-    initialValues: { name:name },
-    validationSchema:contactSchema,
+    initialValues: { name: name, password: "" },
+    validationSchema: contactSchema,
     onSubmit: (values) => {
-      values.name = ""
-console.log("values",values.name);
-      AddName(values.name)
+      values.name = "";
+
+      AddName(values.name);
+    },
+    onBlur: (e) => {
+      console.log("clicked");
     },
   });
 
@@ -29,11 +36,16 @@ console.log("values",values.name);
   const AddName = async (value) => {
     try {
       // Send a POST request to the server to add a person
-      const response = await axios.post("http://localhost:5000/addPerson", {
-        name: value,
-        age: null,
-        favFood: [""],
-      });
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        "http://localhost:5000/addPerson",
+        { headers: { Authorization: token } },
+        {
+          name: value,
+          age: null,
+          favFood: [""],
+        }
+      );
       // If the request is successful (status code 200), update the state
       if (response.status === 200) {
         setName(""); // Clear the input field
@@ -93,9 +105,12 @@ console.log("values",values.name);
   // UseEffect hook to fetch the initial list of contacts when the component mounts
   useEffect(() => {
     const getContacts = async () => {
+      const token = localStorage.getItem("token")
       try {
         // Send a GET request to the server to fetch the list of persons
-        const response = await axios.get("http://localhost:5000/getPersons");
+        const response = await axios.get("http://localhost:5000/getPersons", {
+          headers: { Authorization: token },
+        });
         console.log(response); // Log the response for debugging
         setContactList(response.data); // Update the contact list with the fetched data
       } catch (error) {
@@ -107,44 +122,43 @@ console.log("values",values.name);
 
   return (
     <div className="App">
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        name="name"
-        value={values.name}
-        onBlur={handleBlur}
-        placeholder="Add your name please"
-        onChange={handleChange}
-      />
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          name="name"
+          value={values.name}
+          onBlur={handleBlur("name")}
+          placeholder="Add your name please"
+          onChange={handleChange}
+        />
 
-      <button type="submit">Add</button>
-      {errors.name  && <div>{errors.name}</div>}
-
-    </form>
-    <ul>
-      {contactList.map((contact) => (
-        <li key={contact._id}>
-          {contact._id === editedContactId ? (
-            <>
-              <input
-                type="text"
-                value={editedName}
-                onChange={(event) => setEditedName(event.target.value)}
-              />
-              <button onClick={() => EditName()}>Save</button>
-            </>
-          ) : (
-            <>
-              {contact.name}{" "}
-              <button onClick={() => handleEditContact(contact)}>Edit</button>{" "}
-              <button onClick={() => DeletePerson(contact._id)}>X</button>
-            </>
-          )}
-        </li>
-      ))}
-    </ul>
-  </div>
-  )
+        <button type="submit">Add</button>
+        {errors.name && <div style={{ color: "red" }}>{errors.name}</div>}
+      </form>
+      <ul>
+        {contactList.map((contact) => (
+          <li key={contact._id}>
+            {contact._id === editedContactId ? (
+              <>
+                <input
+                  type="text"
+                  value={editedName}
+                  onChange={(event) => setEditedName(event.target.value)}
+                />
+                <button onClick={() => EditName()}>Save</button>
+              </>
+            ) : (
+              <>
+                {contact.name}{" "}
+                <button onClick={() => handleEditContact(contact)}>Edit</button>{" "}
+                <button onClick={() => DeletePerson(contact._id)}>X</button>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
-export default Dashboard
+export default Dashboard;

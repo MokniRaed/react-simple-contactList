@@ -7,15 +7,22 @@ function Login() {
     email: "",
     password: "",
   });
+ 
   const navigate = useNavigate()
 
   const submitLogin = () => {
     axios
       .post("http://localhost:5000/login", user)
       .then((response) => {
-        response.status === 200
-          ? navigate("/dashboard")
-          : console.log("failed to connect");
+
+        if (response.status === 200) {
+          localStorage.setItem("token",response.data.token)
+          navigate("/dashboard")
+        }else{
+          console.log("failed to connect");
+        }
+        
+         
       })
       .catch((error) => {
         console.log(error);
@@ -35,6 +42,7 @@ function Login() {
       <input
         name="email"
         type="email"
+        value={user.email}
         placeholder="email@gmail.com"
         onChange={(event) => setUser({ ...user, email: event.target.value })}
       />
